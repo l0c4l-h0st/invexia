@@ -62,8 +62,11 @@ function serializeError(error: any): string {
 
 // Récupérer les membres de l'équipe
 export async function getTeamMembers() {
+  console.log("[v0] getTeamMembers appelé")
   const supabase = await createClient()
   const { data: user } = await supabase.auth.getUser()
+
+  console.log("[v0] User:", user?.user?.id)
 
   if (!user.user) {
     return { error: "Non authentifié", data: null }
@@ -75,6 +78,8 @@ export async function getTeamMembers() {
     .select("entreprise_id, role")
     .eq("id", user.user.id)
     .maybeSingle()
+
+  console.log("[v0] Profil:", { profil, profilError })
 
   if (profilError) {
     return { error: serializeError(profilError), data: null }
@@ -88,12 +93,16 @@ export async function getTeamMembers() {
   let query = supabase.from("profils").select("*, entreprises(nom)").order("created_at", { ascending: false })
 
   if (profil?.role === "admin") {
+    console.log("[v0] Mode admin - tous les utilisateurs")
     // Admin Invexia voit tous les utilisateurs
   } else {
+    console.log("[v0] Mode manager/employe - entreprise", profil.entreprise_id)
     query = query.eq("entreprise_id", profil.entreprise_id)
   }
 
   const { data, error } = await query
+
+  console.log("[v0] Résultat query profils:", { count: data?.length, error })
 
   if (error) {
     return { error: serializeError(error), data: null }

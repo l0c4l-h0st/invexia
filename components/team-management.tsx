@@ -108,14 +108,19 @@ export function TeamManagement() {
 
   // Charger l'équipe
   const loadTeam = async () => {
+    console.log("[v0] Début loadTeam")
     setIsLoading(true)
     setError(null)
 
     const { data, error: teamError } = await getTeamMembers()
 
+    console.log("[v0] Résultat getTeamMembers:", { data, error: teamError })
+
     if (teamError) {
+      console.error("[v0] Erreur team:", teamError)
       setError(typeof teamError === "string" ? teamError : JSON.stringify(teamError))
     } else {
+      console.log("[v0] Team chargée, nombre de membres:", data?.length)
       setTeam(data || [])
     }
     setIsLoading(false)

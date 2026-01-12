@@ -19,7 +19,7 @@ export interface RecentProduct {
   sku: string
   quantite: number
   categorie: string
-  prix_unitaire: number
+  prix_vente: number
 }
 
 export interface RecentActivityItem {
@@ -62,8 +62,7 @@ export async function getDashboardStats(): Promise<{ error: string | null; data:
   }
   const { count: stockFaible } = await stockFaibleQuery
 
-  // Calculer valeur totale du stock
-  const valeurStock = produits?.reduce((acc, p) => acc + (p.quantite || 0) * (p.prix_unitaire || 0), 0) || 0
+  const valeurStock = produits?.reduce((acc, p) => acc + (p.quantite || 0) * (p.prix_vente || 0), 0) || 0
 
   // Compter les membres de l'équipe
   let membresQuery = supabase.from("profils").select("*", { count: "exact", head: true })
@@ -104,7 +103,7 @@ export async function getRecentProducts(): Promise<{ error: string | null; data:
 
   let query = supabase
     .from("produits")
-    .select("id, nom, sku, quantite, prix_unitaire, categories(nom)")
+    .select("id, nom, sku, quantite, prix_vente, categories(nom)")
     .order("created_at", { ascending: false })
     .limit(5)
 
@@ -124,7 +123,7 @@ export async function getRecentProducts(): Promise<{ error: string | null; data:
     sku: p.sku || "N/A",
     quantite: p.quantite || 0,
     categorie: p.categories?.nom || "Non catégorisé",
-    prix_unitaire: p.prix_unitaire || 0,
+    prix_vente: p.prix_vente || 0,
   }))
 
   return { error: null, data: products }

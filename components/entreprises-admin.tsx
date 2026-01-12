@@ -127,20 +127,15 @@ export function EntreprisesAdmin() {
 
   async function loadEntreprises() {
     if (!supabase) {
-      console.error("[v0] Supabase client non disponible")
       setLoading(false)
       return
     }
 
-    console.log("[v0] Chargement entreprises...")
     setLoading(true)
 
     const { data: entreprisesData, error } = await supabase.from("entreprises").select("*").order("nom")
 
-    console.log("[v0] Résultat query entreprises:", { entreprisesData, error })
-
     if (error) {
-      console.error("[v0] Erreur chargement entreprises:", error)
       setLoading(false)
       return
     }

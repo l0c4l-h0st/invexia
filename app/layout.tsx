@@ -37,8 +37,27 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.INV_PUBLIC_SUPABASE_URL
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.INV_PUBLIC_SUPABASE_ANON_KEY
+
   return (
     <html lang="fr" suppressHydrationWarning>
+      <head>
+        {supabaseUrl && supabaseAnonKey && (
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `
+                if (typeof window !== 'undefined') {
+                  window.__SUPABASE_CONFIG__ = {
+                    url: '${supabaseUrl}',
+                    anonKey: '${supabaseAnonKey}'
+                  };
+                }
+              `,
+            }}
+          />
+        )}
+      </head>
       <body className={`font-sans antialiased`}>
         <AuthProvider>
           {children}

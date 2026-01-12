@@ -108,7 +108,7 @@ export function InventoryTable() {
                     {item.categorie}
                   </td>
                   <td className="hidden md:table-cell px-4 md:px-6 py-4 font-medium text-sm md:text-base">
-                    {item.prix_unitaire.toFixed(2)}€
+                    {item.prix_vente.toFixed(2)}€
                   </td>
                   {(canEdit || canDelete) && (
                     <td className="px-4 md:px-6 py-4">

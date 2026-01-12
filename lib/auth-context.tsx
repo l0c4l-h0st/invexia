@@ -155,26 +155,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
 
       try {
-        const controller = new AbortController()
-        const timeoutId = setTimeout(() => controller.abort(), 8000)
+        const windowConfig = (window as any).__SUPABASE_CONFIG__
 
-        const response = await fetch("/api/config", {
-          signal: controller.signal,
-          cache: "no-store",
-        })
-        clearTimeout(timeoutId)
-
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`)
+        if (!windowConfig?.url || !windowConfig?.anonKey) {
+          setConfigError(true)
+          setIsLoading(false)
+          return
         }
 
-        const config = await response.json()
-
-        if (config.error || !config.supabaseUrl || !config.supabaseAnonKey) {
-          throw new Error(config.error || "Config incomplète")
-        }
-
-        const client = createBrowserClient(config.supabaseUrl, config.supabaseAnonKey)
+        const client = createBrowserClient(windowConfig.url, windowConfig.anonKey)
         globalSupabaseClient = client
         setSupabase(client)
       } catch (err) {

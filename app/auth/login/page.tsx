@@ -28,32 +28,38 @@ export default function LoginPage() {
   useEffect(() => {
     const initSupabase = async () => {
       try {
-        const response = await fetch("/api/config")
-        if (!response.ok) throw new Error("Config unavailable")
-        const config = await response.json()
-
-        if (config.supabaseUrl && config.supabaseAnonKey) {
-          const client = createBrowserClient(config.supabaseUrl, config.supabaseAnonKey)
+        // Utiliser la config injectée par le layout
+        const config = (window as any).__SUPABASE_CONFIG__
+        
+        if (!config?.url || !config?.anonKey) {
+          // Fallback vers l'API
+          const response = await fetch("/api/config")
+          if (response.ok) {
+            const apiConfig = await response.json()
+            if (apiConfig.supabaseUrl && apiConfig.supabaseAnonKey) {
+              const client = createBrowserClient(apiConfig.supabaseUrl, apiConfig.supabaseAnonKey)
+              setSupabase(client)
+            }
+          }
+        } else {
+          const client = createBrowserClient(config.url, config.anonKey)
           setSupabase(client)
 
           // Vérifier si déjà connecté
-          const {
-            data: { session },
-          } = await client.auth.getSession()
+          const { data: { session } } = await client.auth.getSession()
           if (session?.user) {
-            router.push(redirectTo)
+            window.location.href = redirectTo
             return
           }
         }
-      } catch (err) {
-        console.error("Erreur init Supabase:", err)
-        setError("Impossible de se connecter au serveur. Veuillez réessayer.")
+      } catch {
+        setError("Impossible de se connecter au serveur.")
       } finally {
         setIsInitializing(false)
       }
     }
     initSupabase()
-  }, [router, redirectTo])
+  }, [redirectTo])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -76,14 +82,16 @@ export default function LoginPage() {
           setError("Email ou mot de passe incorrect")
         } else if (error.message.includes("Email not confirmed")) {
           setError("Veuillez confirmer votre email avant de vous connecter")
+        } else if (error.message.includes("Database error")) {
+          setError("Erreur de base de données. Veuillez réessayer.")
         } else {
           setError(error.message)
         }
         return
       }
 
-      router.push(redirectTo)
-      router.refresh()
+      // Utiliser window.location pour une redirection complète
+      window.location.href = redirectTo
     } catch {
       setError("Une erreur est survenue. Veuillez réessayer.")
     } finally {

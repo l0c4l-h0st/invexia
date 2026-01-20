@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { useAuth } from "@/lib/auth-context"
 import { SearchCommand } from "./search-command"
+import { Logo } from "./logo"
 
 interface TopBarProps {
   onMenuClick: () => void
@@ -51,6 +52,8 @@ export function TopBar({ onMenuClick }: TopBarProps) {
       <header className="glass border-b border-border/40 px-4 md:px-6 py-4 flex items-center justify-between sticky top-0 z-40">
         {/* Left */}
         <div className="flex items-center gap-4 flex-1">
+          <Logo />
+
           <Button
             variant="ghost"
             size="sm"

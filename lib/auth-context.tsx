@@ -74,14 +74,29 @@ export function AuthProvider({ children }: AuthProviderProps) {
     if (obj instanceof Date) return obj.toISOString()
     if (Array.isArray(obj)) return obj.map(serializeSupabaseObject)
 
-    // Create a clean object with only enumerable properties
     const cleaned: any = {}
     for (const key of Object.keys(obj)) {
-      if (!["new", "old", "_id", "__v"].includes(key)) {
-        cleaned[key] = serializeSupabaseObject(obj[key])
+      // Skip only Supabase internal properties (not 'role' which is a valid column)
+      if (["new", "old", "_id", "__v", "iss", "aud", "aal"].includes(key)) {
+        continue
       }
+      // Skip functions and symbols
+      if (typeof obj[key] === "function" || typeof obj[key] === "symbol") {
+        continue
+      }
+      cleaned[key] = serializeSupabaseObject(obj[key])
     }
     return cleaned
+  }
+
+  const serializeUser = (user: SupabaseUser | null): any => {
+    if (!user) return null
+    return {
+      id: user.id,
+      email: user.email,
+      user_metadata: serializeSupabaseObject(user.user_metadata),
+      app_metadata: serializeSupabaseObject(user.app_metadata),
+    }
   }
 
   const loadProfil = useCallback(async (userId: string, client: any) => {
@@ -148,32 +163,39 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, [supabase])
 
   useEffect(() => {
-    const initSupabase = async () => {
-      if (globalSupabaseClient) {
-        setSupabase(globalSupabaseClient)
-        return
-      }
-
+    const initializeSupabase = async () => {
       try {
-        const windowConfig = (window as any).__SUPABASE_CONFIG__
+        // Attendre que le DOM soit prêt et récupérer la config injectée
+        const config = typeof window !== "undefined" ? (window as any).__SUPABASE_CONFIG__ : null
 
-        if (!windowConfig?.url || !windowConfig?.anonKey) {
+        if (!config?.url || !config?.anonKey) {
           setConfigError(true)
           setIsLoading(false)
           return
         }
 
-        const client = createBrowserClient(windowConfig.url, windowConfig.anonKey)
-        globalSupabaseClient = client
-        setSupabase(client)
-      } catch (err) {
-        setConfigError(true)
+        if (!globalSupabaseClient) {
+          globalSupabaseClient = createBrowserClient(config.url, config.anonKey)
+        }
+        setSupabase(globalSupabaseClient)
+
+        // Récupérer la session
+        const { data: sessionData } = await globalSupabaseClient.auth.getSession()
+
+        if (sessionData?.session?.user) {
+          const cleanUser = serializeUser(sessionData.session.user)
+          setUser(cleanUser)
+          await loadProfil(sessionData.session.user.id, globalSupabaseClient)
+        }
+
+        setIsLoading(false)
+      } catch {
         setIsLoading(false)
       }
     }
 
-    initSupabase()
-  }, [])
+    initializeSupabase()
+  }, [loadProfil])
 
   useEffect(() => {
     if (!supabase) return
@@ -188,7 +210,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         } = await supabase.auth.getSession()
 
         if (session?.user && mounted) {
-          setUser(session.user)
+          setUser(serializeUser(session.user) as SupabaseUser)
           await loadProfil(session.user.id, supabase)
         }
 
@@ -196,14 +218,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
           if (!mounted) return
 
           if (event === "SIGNED_IN" && session?.user) {
-            setUser(session.user)
+            setUser(serializeUser(session.user) as SupabaseUser)
             await loadProfil(session.user.id, supabase)
           } else if (event === "SIGNED_OUT") {
             setUser(null)
             setProfil(null)
             setEntreprise(null)
           } else if (event === "TOKEN_REFRESHED" && session?.user) {
-            setUser(session.user)
+            setUser(serializeUser(session.user) as SupabaseUser)
           }
         })
 

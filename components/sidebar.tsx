@@ -39,7 +39,7 @@ interface MenuItem {
 }
 
 export function Sidebar({ open, onOpenChange }: SidebarProps) {
-  const { profil, hasPermission, signOut, isAuthenticated, isLoading, isProfilLoading } = useAuth()
+  const { profil, entreprise, hasPermission, signOut, isAuthenticated, isLoading, isProfilLoading } = useAuth()
   const router = useRouter()
 
   const isLoadingState = isLoading || isProfilLoading
@@ -202,8 +202,8 @@ export function Sidebar({ open, onOpenChange }: SidebarProps) {
           <div className={`px-4 py-3 mx-2 mt-2 rounded-lg bg-gradient-to-r ${getRoleBadgeClass(profil.role)} border`}>
             <div className="text-xs text-muted-foreground">Rôle actif</div>
             <div className="text-sm font-semibold text-foreground">{getRoleLabel(profil.role)}</div>
-            {profil.entreprise && (
-              <div className="text-xs text-muted-foreground mt-1 truncate">{profil.entreprise.nom}</div>
+            {entreprise && (
+              <div className="text-xs text-muted-foreground mt-1 truncate">{entreprise.nom}</div>
             )}
           </div>
         ) : null}

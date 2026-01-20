@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useState, useEffect } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { createBrowserClient } from "@supabase/ssr"
 import { Button } from "@/components/ui/button"
@@ -21,7 +21,6 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [supabase, setSupabase] = useState<SupabaseClient | null>(null)
   const [isInitializing, setIsInitializing] = useState(true)
-  const router = useRouter()
   const searchParams = useSearchParams()
   const redirectTo = searchParams.get("redirect") || "/"
 

@@ -117,14 +117,29 @@ export async function getRecentProducts(): Promise<{ error: string | null; data:
     return { error: error.message, data: null }
   }
 
-  const products: RecentProduct[] = (data || []).map((p: any) => ({
-    id: p.id,
-    nom: p.nom,
-    sku: p.sku || "N/A",
-    quantite: p.quantite || 0,
-    categorie: typeof p.categories === 'object' && p.categories !== null ? p.categories.nom : "Non catégorisé",
-    prix_vente: p.prix_vente || 0,
-  }))
+  const products: RecentProduct[] = (data || []).map((p: any) => {
+    console.log("[v0] Product categories:", p.categories)
+    
+    let categorieName = "Non catégorisé"
+    if (p.categories) {
+      if (typeof p.categories === 'string') {
+        categorieName = p.categories
+      } else if (typeof p.categories === 'object' && p.categories !== null) {
+        if (p.categories.nom) {
+          categorieName = String(p.categories.nom)
+        }
+      }
+    }
+    
+    return {
+      id: p.id,
+      nom: p.nom,
+      sku: p.sku || "N/A",
+      quantite: p.quantite || 0,
+      categorie: categorieName,
+      prix_vente: p.prix_vente || 0,
+    }
+  })
 
   return { error: null, data: products }
 }

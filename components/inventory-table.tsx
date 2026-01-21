@@ -16,9 +16,7 @@ export function InventoryTable() {
       if (!profil) return
       setIsLoading(true)
       const result = await getRecentProducts()
-      console.log("[v0] InventoryTable result:", result)
       if (result.data) {
-        console.log("[v0] InventoryTable data:", JSON.stringify(result.data, null, 2))
         setItems(result.data)
       }
       setIsLoading(false)

@@ -15,9 +15,7 @@ export function RecentActivity() {
       if (!profil) return
       setIsLoading(true)
       const result = await getRecentActivity()
-      console.log("[v0] RecentActivity result:", result)
       if (result.data) {
-        console.log("[v0] RecentActivity data:", JSON.stringify(result.data, null, 2))
         setActivities(result.data)
       }
       setIsLoading(false)
@@ -25,10 +23,43 @@ export function RecentActivity() {
     loadActivity()
   }, [profil])
 
+  // Formatter les détails d'audit en texte lisible
+  const formatActivityDetails = (details: any, action: string): string => {
+    if (!details) return "Aucun détail"
+    
+    // Si details est une chaîne, la retourner directement
+    if (typeof details === 'string') return details
+    
+    // Si c'est un objet d'audit avec {new, old}
+    if (details.new && details.old) {
+      const newData = details.new
+      const oldData = details.old
+      
+      // Extraire les changements significatifs
+      if (newData.nom) {
+        if (newData.role !== oldData.role) {
+          return `${newData.prenom} ${newData.nom} - Rôle changé: ${oldData.role} → ${newData.role}`
+        }
+        if (newData.entreprise_id !== oldData.entreprise_id) {
+          return `${newData.prenom} ${newData.nom} - Entreprise mise à jour`
+        }
+        return `${newData.prenom} ${newData.nom} - Profil mis à jour`
+      }
+      return "Mise à jour effectuée"
+    }
+    
+    // Pour les autres types (INSERT, DELETE)
+    if (details.nom) {
+      return `${details.nom} (${details.sku || details.role || ''})`
+    }
+    
+    return "Modification effectuée"
+  }
+
   // Mapper les actions aux icônes et couleurs
   const getActivityStyle = (action: string) => {
     const lowerAction = action.toLowerCase()
-    if (lowerAction.includes("create") || lowerAction.includes("ajout")) {
+    if (lowerAction.includes("create") || lowerAction.includes("ajout") || lowerAction.includes("insert")) {
       return {
         icon: Package,
         color: "bg-blue-100/80 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300",
@@ -40,7 +71,7 @@ export function RecentActivity() {
         color: "bg-orange-100/80 dark:bg-orange-900/40 text-orange-600 dark:text-orange-300",
       }
     }
-    if (lowerAction.includes("user") || lowerAction.includes("membre")) {
+    if (lowerAction.includes("user") || lowerAction.includes("membre") || lowerAction.includes("update")) {
       return {
         icon: User,
         color: "bg-green-100/80 dark:bg-green-900/40 text-green-600 dark:text-green-300",
@@ -50,6 +81,12 @@ export function RecentActivity() {
       return {
         icon: Truck,
         color: "bg-purple-100/80 dark:bg-purple-900/40 text-purple-600 dark:text-purple-300",
+      }
+    }
+    if (lowerAction.includes("delete")) {
+      return {
+        icon: AlertCircle,
+        color: "bg-red-100/80 dark:bg-red-900/40 text-red-600 dark:text-red-300",
       }
     }
     return {
@@ -101,7 +138,9 @@ export function RecentActivity() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-xs md:text-sm">{activity.action}</p>
-                    <p className="text-xs text-muted-foreground truncate">{activity.details || "Aucun détail"}</p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {formatActivityDetails(activity.details, activity.action)}
+                    </p>
                     <p className="text-xs text-muted-foreground mt-1">{formatTime(activity.created_at)}</p>
                   </div>
                 </div>

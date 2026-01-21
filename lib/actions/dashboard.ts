@@ -118,8 +118,6 @@ export async function getRecentProducts(): Promise<{ error: string | null; data:
   }
 
   const products: RecentProduct[] = (data || []).map((p: any) => {
-    console.log("[v0] Product categories:", p.categories)
-    
     let categorieName = "Non catégorisé"
     if (p.categories) {
       if (typeof p.categories === 'string') {

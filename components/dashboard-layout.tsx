@@ -8,8 +8,8 @@ import { useAuth } from "@/lib/auth-context"
 import { Loader2 } from "lucide-react"
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
+  const { isLoading, user } = useAuth()
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const { isLoading, isProfilLoading, user, profil } = useAuth()
 
   if (isLoading) {
     return (

@@ -4,7 +4,7 @@ import type React from "react"
 import { useState, useEffect } from "react"
 import { useSearchParams } from "next/navigation"
 import Link from "next/link"
-import { createBrowserClient } from "@supabase/ssr"
+import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -27,29 +27,22 @@ export default function LoginPage() {
   useEffect(() => {
     const initSupabase = async () => {
       try {
-        // Utiliser la config injectée par le layout
-        const config = (window as any).__SUPABASE_CONFIG__
+        // Utiliser le client centralisé
+        const client = createClient()
         
-        if (!config?.url || !config?.anonKey) {
-          // Fallback vers l'API
-          const response = await fetch("/api/config")
-          if (response.ok) {
-            const apiConfig = await response.json()
-            if (apiConfig.supabaseUrl && apiConfig.supabaseAnonKey) {
-              const client = createBrowserClient(apiConfig.supabaseUrl, apiConfig.supabaseAnonKey)
-              setSupabase(client)
-            }
-          }
-        } else {
-          const client = createBrowserClient(config.url, config.anonKey)
-          setSupabase(client)
+        if (!client) {
+          setError("Configuration Supabase manquante.")
+          setIsInitializing(false)
+          return
+        }
+        
+        setSupabase(client)
 
-          // Vérifier si déjà connecté
-          const { data: { session } } = await client.auth.getSession()
-          if (session?.user) {
-            window.location.href = redirectTo
-            return
-          }
+        // Vérifier si déjà connecté
+        const { data: { session } } = await client.auth.getSession()
+        if (session?.user) {
+          window.location.href = redirectTo
+          return
         }
       } catch {
         setError("Impossible de se connecter au serveur.")

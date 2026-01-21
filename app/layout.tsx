@@ -3,6 +3,7 @@ import type { Metadata } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import { AuthProvider } from "@/lib/auth-context"
+import { SupabaseConfig } from "@/components/supabase-config"
 import "./globals.css"
 
 const _geist = Geist({ subsets: ["latin"] })
@@ -43,14 +44,8 @@ export default function RootLayout({
 
   return (
     <html lang="fr" suppressHydrationWarning>
-      <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `window.__SUPABASE_CONFIG__={url:'${supabaseUrl}',anonKey:'${supabaseAnonKey}'};`,
-          }}
-        />
-      </head>
       <body className="font-sans antialiased">
+        <SupabaseConfig url={supabaseUrl} anonKey={supabaseAnonKey} />
         <AuthProvider>
           {children}
           <Analytics />

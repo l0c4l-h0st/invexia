@@ -4,7 +4,7 @@ import type React from "react"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { createBrowserClient } from "@supabase/ssr"
+import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -30,24 +30,13 @@ export default function InscriptionPage() {
   const router = useRouter()
 
   useEffect(() => {
-    const initSupabase = async () => {
-      try {
-        const response = await fetch("/api/config")
-        if (!response.ok) throw new Error("Config unavailable")
-        const config = await response.json()
-
-        if (config.supabaseUrl && config.supabaseAnonKey) {
-          const client = createBrowserClient(config.supabaseUrl, config.supabaseAnonKey)
-          setSupabase(client)
-        }
-      } catch (err) {
-        console.error("Erreur init Supabase:", err)
-        setError("Impossible de se connecter au serveur. Veuillez réessayer.")
-      } finally {
-        setIsInitializing(false)
-      }
+    const client = createClient()
+    if (client) {
+      setSupabase(client)
+    } else {
+      setError("Impossible de se connecter au serveur.")
     }
-    initSupabase()
+    setIsInitializing(false)
   }, [])
 
   const passwordRequirements = [

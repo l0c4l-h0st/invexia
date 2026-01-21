@@ -2,12 +2,11 @@
 
 import type React from "react"
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react"
-import { createBrowserClient } from "@supabase/ssr"
-import type { SupabaseClient } from "@supabase/supabase-js"
+import type { SupabaseClient, User as SupabaseUser } from "@supabase/supabase-js"
 import type { Role, Permission } from "./rbac"
 import { hasPermission, hasAllPermissions, hasAnyPermission, canManageRole } from "./rbac"
-import type { User as SupabaseUser } from "@supabase/supabase-js"
 import { useRouter, usePathname } from "next/navigation"
+import { createClient } from "./supabase/client"
 
 // Types
 export interface Entreprise {
@@ -55,8 +54,6 @@ interface AuthProviderProps {
   children: ReactNode
 }
 
-let globalSupabaseClient: SupabaseClient | null = null
-
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<SupabaseUser | null>(null)
   const [profil, setProfil] = useState<Profil | null>(null)
@@ -65,8 +62,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [isProfilLoading, setIsProfilLoading] = useState(false)
   const [supabase, setSupabase] = useState<SupabaseClient | null>(null)
   const [configError, setConfigError] = useState(false)
+  const [isMounted, setIsMounted] = useState(false)
   const router = useRouter()
   const pathname = usePathname()
+  
+  // S'assurer qu'on est côté client
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
 
   const serializeSupabaseObject = (obj: any): any => {
     if (obj === null || obj === undefined) return obj
@@ -151,41 +154,40 @@ export function AuthProvider({ children }: AuthProviderProps) {
       if (supabase) {
         await supabase.auth.signOut()
       }
-    } catch (err) {
+    } catch {
       // Ignorer les erreurs silencieusement
     } finally {
       setUser(null)
       setProfil(null)
       setEntreprise(null)
-      globalSupabaseClient = null
       window.location.href = "/auth/login"
     }
   }, [supabase])
 
   useEffect(() => {
+    // Ne pas s'initialiser côté serveur
+    if (!isMounted) return
+    
     const initializeSupabase = async () => {
       try {
-        // Attendre que le DOM soit prêt et récupérer la config injectée
-        const config = typeof window !== "undefined" ? (window as any).__SUPABASE_CONFIG__ : null
+        // Utiliser le client centralisé (singleton)
+        const client = createClient()
 
-        if (!config?.url || !config?.anonKey) {
+        if (!client) {
           setConfigError(true)
           setIsLoading(false)
           return
         }
 
-        if (!globalSupabaseClient) {
-          globalSupabaseClient = createBrowserClient(config.url, config.anonKey)
-        }
-        setSupabase(globalSupabaseClient)
+        setSupabase(client)
 
         // Récupérer la session
-        const { data: sessionData } = await globalSupabaseClient.auth.getSession()
+        const { data: sessionData } = await client.auth.getSession()
 
         if (sessionData?.session?.user) {
           const cleanUser = serializeUser(sessionData.session.user)
           setUser(cleanUser)
-          await loadProfil(sessionData.session.user.id, globalSupabaseClient)
+          await loadProfil(sessionData.session.user.id, client)
         }
 
         setIsLoading(false)
@@ -195,7 +197,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
 
     initializeSupabase()
-  }, [loadProfil])
+  }, [isMounted, loadProfil])
 
   useEffect(() => {
     if (!supabase) return

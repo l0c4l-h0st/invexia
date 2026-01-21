@@ -110,9 +110,21 @@ export async function getTeamMembers() {
 
   let serializedData = (data || []).map((item: any) => {
     const member = serializeTeamMember(item)
+    // Extraire le nom de l'entreprise en vérifiant la structure
+    let entrepriseNom = null
+    if (item.entreprises) {
+      if (typeof item.entreprises === 'object' && item.entreprises !== null) {
+        // Peut être un objet simple {nom: "..."} ou un objet complexe {new: ..., old: ...}
+        if (item.entreprises.nom) {
+          entrepriseNom = item.entreprises.nom
+        } else if (item.entreprises.new?.nom) {
+          entrepriseNom = item.entreprises.new.nom
+        }
+      }
+    }
     return {
       ...member,
-      entreprise_nom: item.entreprises?.nom || null,
+      entreprise_nom: entrepriseNom,
     }
   })
 

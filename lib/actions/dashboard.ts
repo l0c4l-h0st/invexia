@@ -103,7 +103,7 @@ export async function getRecentProducts(): Promise<{ error: string | null; data:
 
   let query = supabase
     .from("produits")
-    .select("id, nom, sku, quantite, prix_vente, categories(nom)")
+    .select("id, nom, sku, quantite, prix_vente, categorie_id, categories!inner(nom)")
     .order("created_at", { ascending: false })
     .limit(5)
 
@@ -122,7 +122,7 @@ export async function getRecentProducts(): Promise<{ error: string | null; data:
     nom: p.nom,
     sku: p.sku || "N/A",
     quantite: p.quantite || 0,
-    categorie: p.categories?.nom || "Non catégorisé",
+    categorie: typeof p.categories === 'object' && p.categories !== null ? p.categories.nom : "Non catégorisé",
     prix_vente: p.prix_vente || 0,
   }))
 

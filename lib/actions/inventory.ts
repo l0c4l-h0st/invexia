@@ -310,14 +310,22 @@ export async function getProducts() {
     return []
   }
 
-  return result.data.map((p) => ({
-    id: p.id,
-    nom: p.nom,
-    sku: p.sku,
-    categorie: p.categorie?.nom || "Non catégorisé",
-    prix: p.prix_vente,
-    stock: p.quantite,
-    stock_minimum: p.quantite_min,
-    statut: p.statut,
-  }))
+  return result.data.map((p) => {
+    // Extraire le nom de catégorie de manière sécurisée
+    let categorieName = "Non catégorisé"
+    if (p.categorie && typeof p.categorie === 'object' && 'nom' in p.categorie) {
+      categorieName = String(p.categorie.nom)
+    }
+    
+    return {
+      id: p.id,
+      nom: p.nom,
+      sku: p.sku,
+      categorie: categorieName,
+      prix: p.prix_vente,
+      stock: p.quantite,
+      stock_minimum: p.quantite_min,
+      statut: p.statut,
+    }
+  })
 }

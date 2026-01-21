@@ -130,8 +130,19 @@ export async function getConversations() {
         .eq("lu", false)
         .neq("sender_id", user.user!.id)
 
+      // Extraire correctement le nom de l'entreprise
+      let entrepriseObj = undefined
+      if (conv.entreprise) {
+        if (typeof conv.entreprise === 'object' && conv.entreprise !== null) {
+          if ('nom' in conv.entreprise) {
+            entrepriseObj = { nom: String(conv.entreprise.nom) }
+          }
+        }
+      }
+
       return {
         ...conv,
+        entreprise: entrepriseObj,
         messages_count: count || 0,
         unread_count: unreadCount || 0,
         last_message: messages?.[0] || null,

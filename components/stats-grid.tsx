@@ -15,7 +15,9 @@ export function StatsGrid() {
       if (!profil) return
       setIsLoading(true)
       const result = await getDashboardStats()
+      console.log("[v0] StatsGrid result:", result)
       if (result.data) {
+        console.log("[v0] StatsGrid data:", JSON.stringify(result.data, null, 2))
         setStats(result.data)
       }
       setIsLoading(false)

@@ -15,7 +15,9 @@ export function RecentActivity() {
       if (!profil) return
       setIsLoading(true)
       const result = await getRecentActivity()
+      console.log("[v0] RecentActivity result:", result)
       if (result.data) {
+        console.log("[v0] RecentActivity data:", JSON.stringify(result.data, null, 2))
         setActivities(result.data)
       }
       setIsLoading(false)

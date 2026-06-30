@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Planning de Samuel · Ajouter au calendrier</title>
+<style>
+  :root { color-scheme: light dark; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #0b1020;
+    color: #f5f7ff;
+    min-height: 100vh;
+    padding: env(safe-area-inset-top) 18px calc(env(safe-area-inset-bottom) + 24px);
+  }
+  .wrap { max-width: 540px; margin: 0 auto; }
+  header { text-align: center; padding: 28px 0 8px; }
+  h1 { font-size: 24px; margin: 0 0 6px; }
+  .sub { color: #9aa3c7; font-size: 14px; margin: 0; }
+  .big {
+    display: block; width: 100%; border: 0; cursor: pointer;
+    margin: 22px 0 10px; padding: 18px; border-radius: 16px;
+    font-size: 18px; font-weight: 700; color: #fff;
+    background: linear-gradient(135deg, #4f7cff, #7a3cff);
+    box-shadow: 0 8px 24px rgba(79,124,255,.35);
+  }
+  .big:active { transform: scale(.985); }
+  .hint { text-align: center; color: #9aa3c7; font-size: 13px; margin: 4px 0 18px; }
+  .day {
+    display: flex; align-items: center; justify-content: space-between;
+    width: 100%; border: 1px solid rgba(255,255,255,.12); cursor: pointer;
+    background: rgba(255,255,255,.04); color: #f5f7ff;
+    margin: 8px 0; padding: 14px 16px; border-radius: 14px; text-align: left;
+    font-size: 15px;
+  }
+  .day:active { background: rgba(255,255,255,.09); }
+  .day b { font-size: 16px; }
+  .day .times { color: #9aa3c7; font-size: 13px; margin-top: 3px; display: block; }
+  .day .plus { font-size: 22px; color: #7a9bff; font-weight: 700; }
+  .note {
+    margin-top: 22px; padding: 14px 16px; border-radius: 14px;
+    background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.1);
+    color: #c3cae8; font-size: 13px; line-height: 1.5;
+  }
+  .ok { color: #44d07b; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>📅 Planning de Samuel</h1>
+    <p class="sub">Semaine du 1<sup>er</sup> au 4 juillet 2026</p>
+  </header>
+
+  <button class="big" onclick="addAll()">Ajouter tout mon planning</button>
+  <p class="hint">Ton iPhone te proposera « Ajouter tous les événements ».</p>
+
+  <div id="days"></div>
+
+  <div class="note">
+    🔔 Chaque créneau a 3 rappels : <b>la veille</b>, <b>1 h avant</b> et <b>30 min avant</b>.<br>
+    🕑 Fuseau horaire Europe/Paris.<br>
+    💡 Si rien ne s'ouvre, garde le doigt appuyé sur un bouton puis « Ouvrir dans Calendrier ».
+  </div>
+</div>
+
+<script>
+// --- Données du planning -------------------------------------------------
+// [date AAAAMMJJ, début HHMMSS, fin HHMMSS, libellé]
+const SHIFTS = [
+  ["20260701","060000","093000","Travail (matin)"],
+  ["20260701","100000","133000","Travail (après-midi)"],
+  ["20260702","120000","163000","Travail (matin)"],
+  ["20260702","170000","200000","Travail (après-midi)"],
+  ["20260703","060000","093000","Travail (matin)"],
+  ["20260703","100000","133000","Travail (après-midi)"],
+  ["20260704","083000","150000","Travail (matin)"],
+  ["20260704","153000","173000","Travail (après-midi)"],
+];
+
+const DAYS = [
+  { date: "20260701", label: "Mercredi 1 juillet", times: "06:00–09:30 · 10:00–13:30" },
+  { date: "20260702", label: "Jeudi 2 juillet",    times: "12:00–16:30 · 17:00–20:00" },
+  { date: "20260703", label: "Vendredi 3 juillet", times: "06:00–09:30 · 10:00–13:30" },
+  { date: "20260704", label: "Samedi 4 juillet",   times: "08:30–15:00 · 15:30–17:30" },
+];
+
+const VTIMEZONE = [
+  "BEGIN:VTIMEZONE","TZID:Europe/Paris",
+  "BEGIN:DAYLIGHT","TZOFFSETFROM:+0100","TZOFFSETTO:+0200","TZNAME:CEST",
+  "DTSTART:19700329T020000","RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=-1SU","END:DAYLIGHT",
+  "BEGIN:STANDARD","TZOFFSETFROM:+0200","TZOFFSETTO:+0100","TZNAME:CET",
+  "DTSTART:19701025T030000","RRULE:FREQ=YEARLY;BYMONTH=10;BYDAY=-1SU","END:STANDARD",
+  "END:VTIMEZONE"
+];
+
+function buildICS(shifts) {
+  let L = [
+    "BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Samuel//Planning//FR",
+    "CALSCALE:GREGORIAN","METHOD:PUBLISH","X-WR-CALNAME:Planning Samuel",
+    "X-WR-TIMEZONE:Europe/Paris", ...VTIMEZONE
+  ];
+  for (const [date, start, end, label] of shifts) {
+    L.push(
+      "BEGIN:VEVENT",
+      "UID:samuel-" + date + "-" + start + "@planning",
+      "DTSTAMP:20260630T120000Z",
+      "DTSTART;TZID=Europe/Paris:" + date + "T" + start,
+      "DTEND;TZID=Europe/Paris:" + date + "T" + end,
+      "SUMMARY:" + label,
+      "BEGIN:VALARM","ACTION:DISPLAY","DESCRIPTION:Rappel : travail demain","TRIGGER:-P1D","END:VALARM",
+      "BEGIN:VALARM","ACTION:DISPLAY","DESCRIPTION:Rappel : travail dans 1h","TRIGGER:-PT1H","END:VALARM",
+      "BEGIN:VALARM","ACTION:DISPLAY","DESCRIPTION:Rappel : travail dans 30min","TRIGGER:-PT30M","END:VALARM",
+      "END:VEVENT"
+    );
+  }
+  L.push("END:VCALENDAR");
+  return L.join("\r\n") + "\r\n";
+}
+
+function openICS(shifts, filename) {
+  const ics = buildICS(shifts);
+  const blob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 1500);
+}
+
+function addAll() {
+  openICS(SHIFTS, "planning-samuel.ics");
+}
+
+function addDay(date) {
+  openICS(SHIFTS.filter(s => s[0] === date), "samuel-" + date + ".ics");
+}
+
+// Construit les boutons par jour
+const box = document.getElementById("days");
+for (const d of DAYS) {
+  const btn = document.createElement("button");
+  btn.className = "day";
+  btn.onclick = () => addDay(d.date);
+  btn.innerHTML =
+    '<span><b>' + d.label + '</b><span class="times">' + d.times + '</span></span>' +
+    '<span class="plus">＋</span>';
+  box.appendChild(btn);
+}
+</script>
+</body>
+</html>
